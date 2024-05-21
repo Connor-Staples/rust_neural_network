@@ -28,7 +28,23 @@ impl Matrix {
     };
     m
     }
+    pub fn add(&self, m : &Matrix) -> Matrix {
+        if (self.dimension.1 != m.dimension.1) {
+            panic!("Matrix dimensions cannot be add together");
+        }
 
+        let mut result = Matrix {
+            values: self.values.clone(),
+            dimension: self.dimension,
+        };
+
+        for y in 0..self.dimension.0 {
+            for x in 0..self.dimension.1 {
+                result.values[y][x] += m.values[y][x];
+            }
+        }
+        result
+    }
     //will multiply matricies
     pub fn multiply(&self, m : &Matrix) -> Matrix {
         //Mathematically check if they can be multiplied

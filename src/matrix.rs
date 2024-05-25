@@ -28,6 +28,23 @@ impl Matrix {
     };
     m
     }
+    pub fn sub(&self, m: &Matrix) -> Matrix {
+        if (self.dimension.1 != m.dimension.1) {
+            panic!("Matrix dimensions cannot be subtracted together");
+        }
+
+        let mut result = Matrix {
+            values: self.values.clone(),
+            dimension: self.dimension,
+        };
+
+        for y in 0..self.dimension.0 {
+            for x in 0..self.dimension.1 {
+                result.values[y][x] -= m.values[y][x];
+            }
+        }
+        result
+    }
     pub fn add(&self, m : &Matrix) -> Matrix {
         if (self.dimension.1 != m.dimension.1) {
             panic!("Matrix dimensions cannot be add together");
@@ -65,6 +82,20 @@ impl Matrix {
 
         multiplied_matrix
     }
+    pub fn hadamard(&self, m: &Matrix) -> Matrix {
+        if (self.dimension.1 != m.dimension.1) {
+            panic!("Matrix dimensions cannot be operated together");
+        }
+        let mut new_matrix: Matrix = new(self.dimension.0, self.dimension.1);
+        for y in 0..self.dimension.0 {
+            for x in 0..self.dimension.1 {
+                new_matrix.values[y][x] = self.values[y][x] * m.values[y][x];
+            }
+        }
+        new_matrix
+    }
+
+
     //prints the matrix out in a nice orderly fashion
     pub fn print(&self) {
         for y in 0..self.dimension.0 {

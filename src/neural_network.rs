@@ -19,6 +19,8 @@ impl Neural_Network {
         println!("This network has {} Output Nodes", self.output_nodes.dimension.0);
     }
 
+
+
     pub fn forward_propagate(&self, input: &Matrix) -> Matrix {
         if input.dimension != self.input_nodes.dimension {
             panic!("Input does not match the input node dimensions!");
@@ -39,6 +41,114 @@ impl Neural_Network {
         }
         intermediate
     }
+
+
+    //This will return a vector of the Matrices of the hidden layer node values
+    fn forward_propagate_with_intermediate(&self, input: &Matrix) -> Vec<Matrix> {
+        if input.dimension != self.input_nodes.dimension {
+            panic!("Input does not match the input node dimensions!");
+        }
+
+        let mut out: Vec<Matrix> = vec![];
+        let layer_amount = self.weight_layers.len();
+        let mut intermediate: Matrix = self.weight_layers[0].multiply(input);
+        intermediate = intermediate.add(&self.bias_layers[0]);
+        intermediate = ReLU(&intermediate);
+
+        //push on the matrix
+        out.push(Matrix {
+            values: intermediate.values.clone(),
+            dimension: intermediate.dimension.clone(),
+        }
+        );
+        //loop through the remaining weight layers
+        for i in 1..layer_amount {
+            //multiply and add bias
+            intermediate = self.weight_layers[i].multiply(&intermediate);
+
+            //case for when its the last weight layer where the output nodes do not have a bias
+            if i != layer_amount - 1{
+                intermediate = intermediate.add(&self.bias_layers[i]);
+            }
+            intermediate = ReLU(&intermediate);
+
+            //add the hidden layer values to the vector 
+            out.push(Matrix {
+                values: intermediate.values.clone(),
+                dimension: intermediate.dimension.clone(),
+            }
+            );
+        }
+        
+        out
+    }
+
+
+
+    pub fn back_propagate(&mut self, input: &Matrix, expected_output: &Matrix) {
+        
+        let node_values = self.forward_propagate_with_intermediate(input);
+        let mut layers_index = node_values.len() - 1;
+        let output_layer = &node_values[layers_index];
+        
+        let mut errors: Vec<Matrix> = vec![];
+
+        let error = (output_layer.sub(expected_output)).multiply(&output_layer); //dy/dx node error * output node
+        errors.push(error); //add output layer errors
+
+        layers_index -= 1;
+        let mut run = true;
+        while run {
+            let weights = self.weight_layers[layers_index + 1].transpose();
+            let error = weights.multiply(&errors[errors.len()-1]).hadamard(&node_values[layers_index]);
+            errors.push(error);
+
+
+            
+            if layers_index == 0 {
+                run = false
+            } else {
+                layers_index -= 1;
+            }
+        }
+        errors.reverse(); //output error is now last 
+        let learning_rate: f32 = 0.001;
+
+
+
+        
+        /// GRADIENT DESCENT
+        //input node weights first
+        for wy in 0..self.weight_layers[0].dimension.0 {
+            for wx in 0..self.weight_layers[0].dimension.1 {
+                self.weight_layers[0].values[wy][wx] -= learning_rate * (input.values[wx][0] * errors[0].values[wy][0]);
+            }
+        }
+        //iterate over rest of the weights
+        for l in 1..self.weight_layers.len() {
+            for wy in 0..self.weight_layers[l].dimension.0 {
+                for wx in 0..self.weight_layers[l].dimension.1 {
+                    self.weight_layers[l].values[wy][wx] -= learning_rate * (node_values[l - 1].values[wx][0] * errors[l].values[wy][0]);
+                }
+            }
+
+        }
+
+        //BIAS 
+        // -1 becasue there is no bias for output nodes
+        for l in 0..errors.len()-1 {
+            for y in 0..errors[l].dimension.0 {
+                self.bias_layers[l].values[y][0] -= learning_rate * errors[l].values[y][0];
+            }
+        }
+
+        
+
+        
+    }
+
+
+
 }
 
 pub fn new(input_nodes: usize, hidden_layers: Vec<usize>, output_nodes: usize) -> Neural_Network {
@@ -77,6 +187,7 @@ pub fn ReLU(m : &Matrix) -> Matrix {
         values: m.values.clone(),
         dimension: m.dimension.clone(),
     };
+    //dont know why i looped both dimensions when this only gets applied to vectors 
     for y in 0..m.dimension.0 {
         for x in 0..m.dimension.1 {
             if result.values[y][x] < 0.0 {

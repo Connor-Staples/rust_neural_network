@@ -1,0 +1,9 @@
+[package]
+name = "neural_network_v2"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+math = {git = "https://github.com/Connor-Staples/math.rs"}
+num = "0.4"
+rand = "0.8.5"
